@@ -6,12 +6,83 @@ as MCP tools, resources, and prompts.
 
 from typing import Literal
 
+from ddgs import DDGS
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field
 
-from duckduckgo import search as ddg_search
-
 BODY_PREVIEW_LENGTH = 200
+
+# Common DuckDuckGo region codes and human-readable names
+REGION_CODES: dict[str, str] = {
+    "xa-ar": "Arabia",
+    "xa-en": "Arabia (en)",
+    "ar-es": "Argentina",
+    "au-en": "Australia",
+    "at-de": "Austria",
+    "be-fr": "Belgium (fr)",
+    "be-nl": "Belgium (nl)",
+    "br-pt": "Brazil",
+    "bg-bg": "Bulgaria",
+    "ca-en": "Canada",
+    "ca-fr": "Canada (fr)",
+    "ct-ca": "Catalan",
+    "cl-es": "Chile",
+    "cn-zh": "China",
+    "co-es": "Colombia",
+    "hr-hr": "Croatia",
+    "cz-cs": "Czech Republic",
+    "dk-da": "Denmark",
+    "ee-et": "Estonia",
+    "fi-fi": "Finland",
+    "fr-fr": "France",
+    "de-de": "Germany",
+    "gr-el": "Greece",
+    "hk-tzh": "Hong Kong",
+    "hu-hu": "Hungary",
+    "in-en": "India",
+    "id-id": "Indonesia",
+    "id-en": "Indonesia (en)",
+    "ie-en": "Ireland",
+    "il-he": "Israel",
+    "it-it": "Italy",
+    "jp-jp": "Japan",
+    "kr-kr": "Korea",
+    "lv-lv": "Latvia",
+    "lt-lt": "Lithuania",
+    "xl-es": "Latin America",
+    "my-ms": "Malaysia",
+    "my-en": "Malaysia (en)",
+    "mx-es": "Mexico",
+    "nl-nl": "Netherlands",
+    "nz-en": "New Zealand",
+    "no-no": "Norway",
+    "pe-es": "Peru",
+    "ph-en": "Philippines",
+    "ph-tl": "Philippines (tl)",
+    "pl-pl": "Poland",
+    "pt-pt": "Portugal",
+    "ro-ro": "Romania",
+    "ru-ru": "Russia",
+    "sg-en": "Singapore",
+    "sk-sk": "Slovak Republic",
+    "sl-sl": "Slovenia",
+    "za-en": "South Africa",
+    "es-es": "Spain",
+    "se-sv": "Sweden",
+    "ch-de": "Switzerland (de)",
+    "ch-fr": "Switzerland (fr)",
+    "ch-it": "Switzerland (it)",
+    "tw-tzh": "Taiwan",
+    "th-th": "Thailand",
+    "tr-tr": "Turkey",
+    "ua-uk": "Ukraine",
+    "uk-en": "United Kingdom",
+    "us-en": "United States",
+    "ue-es": "United States (es)",
+    "ve-es": "Venezuela",
+    "vn-vi": "Vietnam",
+    "wt-wt": "No region",
+}
 
 
 class SearchResult(BaseModel):
@@ -37,6 +108,26 @@ mcp = FastMCP(
     "Use the search tools to find information on the web.",
     log_level="CRITICAL",
 )
+
+
+# Regions resource
+@mcp.resource("duckduckgo://regions")
+def get_regions() -> dict:
+    """List supported region codes and human-readable names.
+
+    Returns a JSON object with a short note, the total count, and the
+    list of available region codes.
+    """
+    return {
+        "note": (
+            "Pass one of these codes as the 'region' parameter. Use null to let "
+            "DuckDuckGo choose a default (worldwide)."
+        ),
+        "count": len(REGION_CODES),
+        "regions": [
+            {"code": code, "name": name} for code, name in REGION_CODES.items()
+        ],
+    }
 
 
 @mcp.tool(name="search")
@@ -84,7 +175,7 @@ def search_tool(
         if timelimit
         else None
     )
-    raw_results = ddg_search(
+    raw_results = DDGS().text(
         query,
         max_results=max_results,
         region=region,
