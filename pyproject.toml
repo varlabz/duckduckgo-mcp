@@ -9,11 +9,13 @@ authors = [{name = "varlabz", email = "varlabz@umdoze.com"}]
 requires-python = ">=3.12"
 dependencies = [
     "ddgs>=9.6.0",
+    "mcp[cli]>=1.14.0",
 ]
 dynamic = ["version"]
 
 [project.scripts]
-duckduckgo = "duckduckgo.cli:cli"
+duckduckgo = "duckduckgo.cli:main"
+duckduckgo-mcp = "duckduckgo.mcp:main"
 
 [project.optional-dependencies]
 dev = ["ruff", "pytest"]
