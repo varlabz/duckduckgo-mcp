@@ -9,13 +9,14 @@ from typing import Literal
 from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field
 
-from duckduckgo import search
+from duckduckgo import search as ddg_search
 
 BODY_PREVIEW_LENGTH = 200
 
 
 class SearchResult(BaseModel):
     """A single search result from DuckDuckGo."""
+
     title: str = Field(description="The title of the search result")
     url: str = Field(description="The URL of the search result")
     body: str = Field(description="The body/snippet of the search result")
@@ -23,9 +24,11 @@ class SearchResult(BaseModel):
 
 class SearchResponse(BaseModel):
     """Response containing search results."""
+
     query: str = Field(description="The search query that was executed")
     results: list[SearchResult] = Field(description="List of search results")
     total_results: int = Field(description="Total number of results returned")
+
 
 # Create the FastMCP server instance
 mcp = FastMCP(
@@ -34,24 +37,24 @@ mcp = FastMCP(
     "Use the search tools to find information on the web.",
 )
 
-@mcp.tool()
-def search(
+
+@mcp.tool(name="search")
+def search_tool(
     query: str,
     max_results: int = Field(
-        default=10, ge=1, le=50,
-        description="Maximum number of results to return (1-50)"
+        default=10,
+        ge=1,
+        le=50,
+        description="Maximum number of results to return (1-50)",
     ),
     region: str | None = Field(
-        default=None,
-        description="Region code (e.g., 'us-en', 'uk-en', 'de-de')"
+        default=None, description="Region code (e.g., 'us-en', 'uk-en', 'de-de')"
     ),
     safesearch: Literal["on", "moderate", "off"] = Field(
-        default="off",
-        description="Safe search level"
+        default="off", description="Safe search level"
     ),
-    timelimit: Literal["d", "w", "m", "y"] | None = Field(
-        default=None,
-        description="Time limit for results"
+    timelimit: Literal["day", "week", "month", "year"] | None = Field(
+        default=None, description="Time limit for results"
     ),
 ) -> SearchResponse:
     """Search the web using DuckDuckGo.
@@ -64,38 +67,41 @@ def search(
         max_results: Maximum number of results to return (1-50)
         region: Region code for localized results (optional)
         safesearch: Safe search filtering level
-        timelimit: Time limit for results (d=day, w=week, m=month, y=year)
+        timelimit: Time limit for results (day, week, month, year)
 
     Returns:
         SearchResponse with query, results, and total count
     """
-    # Build search parameters
-    kwargs = {}
-    if region:
-        kwargs["region"] = region
-    if safesearch:
-        kwargs["safesearch"] = safesearch
-    if timelimit:
-        kwargs["timelimit"] = timelimit
-
-    # Perform the search
-    raw_results = search(query, max_results=max_results, **kwargs)
+    # map timelimit values to ddg_search parameters
+    tl = (
+        {
+            "day": "d",
+            "week": "w",
+            "month": "m",
+            "year": "y",
+        }.get(timelimit.strip().lower(), None)
+        if timelimit
+        else None
+    )
+    raw_results = ddg_search(
+        query,
+        max_results=max_results,
+        region=region,
+        safesearch=safesearch,
+        timelimit=tl,
+    )
 
     # Convert to structured results
     results = [
         SearchResult(
             title=result.get("title", "No title"),
             url=result.get("href", "No URL"),
-            body=result.get("body", "No body")
+            body=result.get("body", "No body"),
         )
         for result in raw_results
     ]
 
-    return SearchResponse(
-        query=query,
-        results=results,
-        total_results=len(results)
-    )
+    return SearchResponse(query=query, results=results, total_results=len(results))
 
 
 @mcp.tool()
@@ -112,7 +118,7 @@ def quick_search(query: str, max_results: int = 5) -> str:
     Returns:
         Formatted string with search results
     """
-    results = search(query, max_results=max_results)
+    results = ddg_search(query, max_results=max_results)
 
     if not results:
         return f"No results found for query: {query}"
@@ -199,7 +205,7 @@ def research_planner(topic: str, depth: str = "basic") -> str:
     depth_levels = {
         "basic": "3-5 key questions",
         "intermediate": "5-8 focused questions",
-        "comprehensive": "8-12 detailed questions"
+        "comprehensive": "8-12 detailed questions",
     }
 
     questions_desc = depth_levels.get(depth, depth_levels["basic"])
