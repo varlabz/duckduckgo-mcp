@@ -28,6 +28,13 @@ def main_cli():
         help="Time limit",
     )
     parser.add_argument(
+        "--categories",
+        "-c",
+        choices=["text", "images", "videos", "news"],
+        default="text",
+        help="Result type to search (text, images, videos, news)",
+    )
+    parser.add_argument(
         "--json", action="store_true", help="Output results as JSON array"
     )
     args = parser.parse_args()
@@ -40,6 +47,7 @@ def main_cli():
     response = search_tool(
         query,
         max_results=args.max_results,
+        categories=args.categories,
         region=args.region,
         safesearch=args.safesearch,
         timelimit=args.timelimit,

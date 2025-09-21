@@ -4,7 +4,7 @@ This module provides an MCP server that exposes DuckDuckGo search functionality
 as MCP tools, resources, and prompts.
 """
 
-from typing import Literal
+from typing import Annotated, Final, Literal
 
 from ddgs import DDGS
 from mcp.server.fastmcp import FastMCP
@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 BODY_PREVIEW_LENGTH = 200
 
 # Common DuckDuckGo region codes and human-readable names
-REGION_CODES: dict[str, str] = {
+REGION_CODES: Final[dict[str, str]] = {
     "xa-ar": "Arabia",
     "xa-en": "Arabia (en)",
     "ar-es": "Argentina",
@@ -133,21 +133,26 @@ def get_regions() -> dict:
 @mcp.tool(name="search")
 def search_tool(
     query: str,
-    max_results: int = Field(
-        default=10,
-        ge=1,
-        le=50,
-        description="Maximum number of results to return (1-50)",
-    ),
-    region: str | None = Field(
-        default=None, description="Region code (e.g., 'us-en', 'uk-en', 'de-de')"
-    ),
-    safesearch: Literal["on", "moderate", "off"] = Field(
-        default="off", description="Safe search level"
-    ),
-    timelimit: Literal["day", "week", "month", "year"] | None = Field(
-        default=None, description="Time limit for results"
-    ),
+    max_results: Annotated[
+        int,
+        Field(ge=1, le=50, description="Maximum number of results to return (1-50)"),
+    ] = 10,
+    categories: Annotated[
+        Literal["text", "images", "videos", "news"],
+        Field(description="Result type to search: text (default), images, videos, or news"),
+    ] = "text",
+    region: Annotated[
+        str | None,
+        Field(description="Region code (e.g., 'us-en', 'uk-en', 'de-de')"),
+    ] = None,
+    safesearch: Annotated[
+        Literal["on", "moderate", "off"],
+        Field(description="Safe search level"),
+    ] = "off",
+    timelimit: Annotated[
+        Literal["day", "week", "month", "year"] | None,
+        Field(description="Time limit for results"),
+    ] = None,
 ) -> SearchResponse:
     """Search the web using DuckDuckGo.
 
@@ -164,7 +169,7 @@ def search_tool(
     Returns:
         SearchResponse with query, results, and total count
     """
-    # map timelimit values to ddg_search parameters
+    # map timelimit values to ddgs parameters
     tl = (
         {
             "day": "d",
@@ -175,23 +180,69 @@ def search_tool(
         if timelimit
         else None
     )
-    raw_results = DDGS().text(
-        query,
-        max_results=max_results,
-        region=region,
-        safesearch=safesearch,
-        timelimit=tl,
-    )
+    client = DDGS()
+    region_param = region or "us-en"
+    if categories == "text":
+        raw_results = client.text(
+            query,
+            max_results=max_results,
+            region=region_param,
+            safesearch=safesearch,
+            timelimit=tl,
+        )
+    elif categories == "news":
+        raw_results = client.news(
+            query,
+            max_results=max_results,
+            region=region_param,
+            safesearch=safesearch,
+            timelimit=tl,
+        )
+    elif categories == "images":
+        raw_results = client.images(
+            query,
+            max_results=max_results,
+            region=region_param,
+            safesearch=safesearch,
+            timelimit=tl,
+        )
+        
+    elif categories == "videos":
+        raw_results = client.videos(
+            query,
+            max_results=max_results,
+            region=region_param,
+            safesearch=safesearch,
+            timelimit=tl,
+        )
+    else:
+        # Fallback to text in case of unexpected value
+        raw_results = client.text(
+            query,
+            max_results=max_results,
+            region=region_param,
+            safesearch=safesearch,
+            timelimit=tl,
+        )
 
     # Convert to structured results
-    results = [
-        SearchResult(
-            title=result.get("title", "No title"),
-            url=result.get("href", "No URL"),
-            body=result.get("body", "No body"),
+    results: list[SearchResult] = []
+    for result in raw_results:
+        title = result.get("title", "No title")
+        # Prefer common link keys across result types
+        url = (
+            result.get("href")
+            or result.get("url")
+            or result.get("content")  # videos
+            or result.get("image")  # images direct link
+            or "No URL"
         )
-        for result in raw_results
-    ]
+        body = (
+            result.get("body")
+            or result.get("description")  # videos
+            or "No body"
+        )
+        results.append(SearchResult(title=title, url=url, body=body))
 
     return SearchResponse(query=query, results=results, total_results=len(results))
 
