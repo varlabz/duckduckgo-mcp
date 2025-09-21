@@ -4,6 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "duckduckgo"
+version = "0.0.1"
 description = "duckduckgo cli/mcp"
 authors = [{name = "varlabz", email = "varlabz@umdoze.com"}]
 requires-python = ">=3.12"
@@ -11,7 +12,6 @@ dependencies = [
     "ddgs>=9.6.0",
     "mcp[cli]>=1.14.0",
 ]
-dynamic = ["version"]
 
 [project.scripts]
 duckduckgo = "duckduckgo.cli:main"

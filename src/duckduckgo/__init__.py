@@ -1,7 +1,5 @@
 from ddgs import DDGS
 
-__version__ = "0.0.1"
-
 
 def search(
     query, max_results=10, region=None, safesearch="off", timelimit=None, **kwargs
