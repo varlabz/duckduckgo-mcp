@@ -63,7 +63,13 @@ uvx --from git+https://github.com/varlabz/duckduckgo-mcp duckduckgo-mcp
 ### MCP Capabilities
 
 - Tools: `search` — DuckDuckGo search across `text` (default), `images`, `videos`, or `news`.
-  - Parameters: `query` (string), `max_results` (1–50, default 10), `categories` (`text|images|videos|news`), `region` (e.g., `us-en`; defaults to `us-en` when omitted), `safesearch` (`on|moderate|off`, default `off`), `timelimit` (`day|week|month|year`).
+  - Parameters:
+    - `query` (string)
+    - `max_results` (1–50, default 10)
+    - `categories` (`text|images|videos|news`)
+    - `region` (e.g., `us-en`; defaults to `us-en` when omitted)
+    - `safesearch` (`on|moderate|off`, default `off`)
+    - `timelimit` (`day|week|month|year`)
   - Returns: `query`, `total_results`, `results[{title, url, body}]`.
 - Resources: `duckduckgo://regions` — JSON with `note`, `count`, and `regions[{code, name}]` to discover supported region codes.
 - Prompts: `search_assistant(query, context="")` — generates a prompt to analyze search results; `research_planner(topic, depth="basic|intermediate|comprehensive")` — generates a structured research plan.
