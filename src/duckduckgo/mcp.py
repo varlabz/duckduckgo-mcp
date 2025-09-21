@@ -104,54 +104,6 @@ def search_tool(
     return SearchResponse(query=query, results=results, total_results=len(results))
 
 
-@mcp.tool()
-def quick_search(query: str, max_results: int = 5) -> str:
-    """Perform a quick web search and return formatted text results.
-
-    This is a simplified version that returns human-readable text instead of
-    structured data, useful for quick lookups.
-
-    Args:
-        query: The search query string
-        max_results: Maximum number of results to return (default: 5)
-
-    Returns:
-        Formatted string with search results
-    """
-    results = ddg_search(query, max_results=max_results)
-
-    if not results:
-        return f"No results found for query: {query}"
-
-    output = f"Search results for: {query}\n\n"
-    for i, result in enumerate(results, 1):
-        output += f"{i}. {result.get('title', 'No title')}\n"
-        output += f"   URL: {result.get('href', 'No URL')}\n"
-        body = result.get("body", "No body")
-        # Truncate body if too long
-        if len(body) > BODY_PREVIEW_LENGTH:
-            body = body[:BODY_PREVIEW_LENGTH] + "..."
-        output += f"   {body}\n\n"
-
-    return output.strip()
-
-
-@mcp.resource("search://recent/{query}")
-def recent_search_results(query: str) -> str:
-    """Get recent search results for a query.
-
-    This resource provides access to recent search results that can be
-    referenced by other tools or cached for performance.
-
-    Args:
-        query: The search query
-
-    Returns:
-        Formatted search results
-    """
-    return quick_search(query, max_results=10)
-
-
 @mcp.prompt()
 def search_assistant(query: str, context: str = "") -> str:
     """Generate a search assistant prompt for analyzing search results.
