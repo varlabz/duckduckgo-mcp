@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-duckduckgo = "duckduckgo.cli:main"
+duckduckgo-cli = "duckduckgo.cli:main"
 duckduckgo-mcp = "duckduckgo.mcp:main"
 
 [project.optional-dependencies]
