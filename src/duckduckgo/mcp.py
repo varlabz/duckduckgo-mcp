@@ -35,6 +35,7 @@ mcp = FastMCP(
     name="DuckDuckGo Search",
     instructions="A search server that provides access to DuckDuckGo search results. "
     "Use the search tools to find information on the web.",
+    log_level="CRITICAL",
 )
 
 
@@ -185,10 +186,10 @@ Research Depth: {depth}
 """
 
 
-def main():
+def main_mcp():
     """Entry point for the MCP server."""
     mcp.run()
 
 
 if __name__ == "__main__":
-    main()
+    main_mcp()
